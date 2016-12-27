@@ -1,0 +1,437 @@
+<script>
+
+function start(){ 
+    console.log('start')
+    createTableFiles()
+    createTableDiffide()
+}
+
+$(document).ready(function() {
+
+//controlla il click su tableFiles
+  $("#tableFiles").on('click', function(){
+  //gestisce il change di checkedAll
+    $("#checkedAll").change(function(){
+      if(this.checked){
+        $(".checkSingle").each(function(){
+          this.checked=true;
+        })              
+      }else{
+        $(".checkSingle").each(function(){
+          this.checked=false;
+        })              
+      }
+    });
+//gestisce il change di checkedSingle  
+    $(".checkSingle").change(function () {
+        if ($(this).is(":checked")){
+        var isAllChecked = 0;
+        $(".checkSingle").each(function(){
+          if(!this.checked)
+             isAllChecked = 1;
+        })              
+        if(isAllChecked == 0){ 
+          $("#checkedAll").prop("checked", true); 
+          }     
+      }
+      else {
+        $("#checkedAll").prop("checked", false);
+      };
+    });
+   })    
+   
+   //aggiorna la tableFiles (deve stare fuori dal .on della table
+  $("#refreshTableFiles").click(function(){
+     console.log('aggiorna la tabella')
+     var $icon = $( this ).find( ".glyphicon.glyphicon-refresh" ),
+      animateClass = "glyphicon-refresh-animate";
+      $icon.addClass( animateClass );
+      // setTimeout is to indicate some async operation
+      window.setTimeout( function() {
+        $icon.removeClass( animateClass );
+      }, 2000 );
+      $("#tableFiles tbody").remove();
+        console.log('launch createTableFiles')
+       createTableFiles()
+     })
+     
+     
+//monitorizza il click di tableDiffide
+   $("#tableDiffide").on('click', function(){
+   var numdiffide = 0
+   
+   //gestisce il change di checkedAllDiffide
+      $("#checkedAllDiffide").change(function(){
+        if(this.checked){
+
+          $(".checkSingleDiffide").each(function(){
+            this.checked=true;
+          })              
+        }else{
+          $(".checkSingleDiffide").each(function(){
+            this.checked=false;
+            
+          })              
+        }   
+      });
+      
+//gestisce il change di checkedSingleDiffide  
+    $(".checkSingleDiffide").click(function (numdiffide) {
+    console.log('numdiffide ' + numdiffide)
+        if ($(this).is(":checked")){
+        numdiffide++
+        var isAllChecked = 0;
+        $(".checkSingleDiffide").each(function(){
+          if(!this.checked)
+             isAllChecked = 1;
+        })
+        if(isAllChecked == 0){ 
+          $("#checkedAllDiffide").prop("checked", true); 
+        }
+      }
+      else {
+      numdiffide--
+        $("#checkedAllDiffide").prop("checked", false);
+      return numdiffide
+      }  
+
+    });    
+});
+ });  // chiude il document ready
+   
+// validazione tableFiles
+      $('#myFormFiles').validator().on('submit', function (e) {
+          if (e.isDefaultPrevented()) {
+            console.log('form prevented')  
+            }
+            else 
+            {
+              // le checkbox non contengono l'attributo require, quindi il controllo viene fatto qui !
+                var min = 1 //minumum number of boxes to be checked for this form-group
+                if($(".checkSingle:checkbox:checked").length<min){
+                  console.log('devi selezionare almeno ' + min + ' file/s')
+                  return false
+                  // è necessario selezionare almeno un file
+                }
+                $('#importOutput').html('')
+                  // importa i dati dai file di affido selezionati
+                  
+                  // gestisce l'animazione dell'icona del button importa
+                  console.log('click icon')
+                  var $icon = $( this ).find( ".glyphicon.glyphicon-import" );
+                    if($icon.hasClass('glyphicon-import')) {
+                        $icon.removeClass('glyphicon-import')
+                        $icon.addClass('glyphicon-refresh')
+                        $icon.addClass('glyphicon-refresh-animate')
+                        // setTimeout is to indicate some async operation
+                        window.setTimeout( function() {
+                           $icon.removeClass('glyphicon-refresh')
+                            $icon.removeClass('glyphicon-refresh-animate')
+                            $icon.addClass('glyphicon-import')
+                        }, 2000 );
+                        }
+                 //compone l'array dei files selezionati
+                 var files = []
+                  var checkboxes = $("input:checkbox:checked");
+                  $(checkboxes).each(function(){
+                    arr = $(this).closest('tr').find('td').eq(2); 
+                    $(arr).each(function(){
+                       files.push(this.innerHTML)
+                    });
+                  });
+                  //legge i dati dai files di affido selezionati
+                  console.log(files)
+                  google.script.run
+                    .withSuccessHandler(onReadDiffide)
+                    .withFailureHandler(onError2)
+                    .readDiffideDaInviareFromFiles(files)    
+                  return false
+          }
+                function onReadDiffide(objDiffideDaInviare){
+                    console.log('dati scritti su sheet')
+                    // ricrea la tabella dei files aggiornata 
+                    createTableFiles() 
+                    // crea la tabella diffide
+                    createTableDiffide(objDiffideDaInviare)
+                }
+                 
+                function onError2(err){
+                  console.log(err)
+                  $('#importOutput').html('Non è stato possibile importare il file selezionato')
+                 }
+          })
+ //**********
+
+ // button Filter
+        $('.filterable .btn-filter').click(function(){
+
+        var $panel = $(this).parents('.filterable'),
+        $filters = $panel.find('.filters input'),
+        $tbody = $panel.find('.table tbody');
+        if ($filters.prop('disabled') === true) {
+            $filters.prop('disabled', false);
+            $("#range").attr("placeholder", "(es. 3-28)");
+            $("#range").attr('size', ($("#range").attr('placeholder').length))
+            $filters.first().focus();
+        } else {
+            $filters.val('').prop('disabled', true);
+            $tbody.find('.no-result').remove();
+            $tbody.find('tr').show();
+        }
+    });
+    
+     $('#range').blur(function(e){
+        /* Ignore tab key */
+        var code = e.keyCode || e.which;
+        if (code == '9') return;
+        /* if esc is pressed we want to clear the value of search bo */
+        if (code == 27 || $(this).val() == '') {
+        $(this).val('');
+        }
+        /* Useful DOM data and selectors */
+        var $input = $(this),
+        rangeArray = $input.val().toLowerCase().split("-"),
+        $panel = $input.parents('.filterable'),
+        column = $panel.find('.filters th').index($input.parents('th')),
+        $table = $panel.find('.table'),
+        $rows = $table.find('tbody tr')
+        /* filter function ;) */
+        var $filteredRows = $rows.filter(function(){
+            var $t = $(this);
+            for (var i = rangeArray[0]; i < rangeArray[0]; ++i) {
+              if ($t.is(":contains('" +i+ "')")) {
+              return true;
+            }
+        }
+        return false;
+        })
+        console.log(JSON.stringify("righe filtrate " + $filteredRows))  
+        /* Clean previous no-result if exist */
+        $table.find('tbody .no-result').remove();
+        /* Show all rows, hide filtered ones (never do that outside of a demo ! xD) */
+        $rows.show();
+        $filteredRows.hide();
+        /* Prepend no-result row if all rows are filtered */
+        if ($filteredRows.length === $rows.length) {
+            $table.find('tbody').prepend($('<tr class="no-result text-center"><td colspan="'+ $table.find('.filters th').length +'">No result found</td></tr>'));
+        }
+    }); 
+    
+    
+   
+
+
+    $('.filterable .filters input').not('#range').keyup(function(e){
+        /* Ignore tab key */
+        var code = e.keyCode || e.which;
+        if (code == '9') return;
+        //if esc is pressed we want to clear the value of search box
+        if (code == 27 || $(this).val() == '') {
+        $(this).val('');
+        }
+        /* Useful DOM data and selectors */
+        var $input = $(this),
+        inputContent = $input.val().toLowerCase(),
+        $panel = $input.parents('.filterable'),
+        column = $panel.find('.filters th').index($input.parents('th')),
+        $table = $panel.find('.table'),
+        $rows = $table.find('tbody tr');
+        console.log(inputContent)
+        /* Dirtiest filter function ever ;) */
+        var $filteredRows = $rows.filter(function(){
+            var value = $(this).find('td').eq(column).text().toLowerCase();
+            return value.indexOf(inputContent) === -1;
+        });
+        /* Clean previous no-result if exist */
+        $table.find('tbody .no-result').remove();
+        /* Show all rows, hide filtered ones (never do that outside of a demo ! xD) */    
+        $rows.show();
+        $filteredRows.hide();
+        /* Prepend no-result row if all rows are filtered */
+        if ($filteredRows.length === $rows.length) {
+            $table.find('tbody').prepend($('<tr class="no-result text-center"><td colspan="'+ $table.find('.filters th').length +'">No result found</td></tr>'));
+        }
+    }); 
+   
+    
+// form validator di Diffide
+$('#myFormDiffide').validator().on('submit', function (e) {
+ var min = 1 //minumum number of boxes to be checked for this form-group
+          if (e.isDefaultPrevented()) {
+            console.log('form prevented')  
+           
+            }
+            else 
+            {
+              // le checkbox non contengono l'attributo require, quindi il controllo viene fatto qui !
+                 // console.log ($(".checkSingleDiffide :checkbox").length)
+                 // è necessario selezionare almeno un file
+                 // if($(".checkSingleDiffide :checkbox:checked").length<min){
+                 // console.log('devi selezionare almeno ' + min + ' diffida/e')
+                 printDiffide()
+               return false
+            }
+ })
+          
+
+           function printDiffide(){
+                var invioData = $('#modalPrint').modal('show')
+                return false;
+                 /*
+                  // gestisce l'animazione dell'icona del button importa
+                  console.log('click icon')
+                  var $icon = $( this ).find( ".glyphicon.glyphicon-print" );
+                    if($icon.hasClass('glyphicon-print')) {
+                        $icon.removeClass('glyphicon-print')
+                        $icon.addClass('glyphicon-refresh')
+                        $icon.addClass('glyphicon-refresh-animate')
+                        // setTimeout is to indicate some async operation
+                        window.setTimeout( function() {
+                           $icon.removeClass('glyphicon-refresh')
+                            $icon.removeClass('glyphicon-refresh-animate')
+                            $icon.addClass('glyphicon-print')
+                        }, 2000 );
+                        }
+                 //compone l'array dei files selezionati
+                 
+                  var checkboxes = $("input:checkbox:checked");
+                  $(checkboxes).each(function(){
+                    arr = $(this).closest('tr').find('td').eq(2); 
+                    $(arr).each(function(){
+                       diffide.push(this.innerHTML)
+                    });
+                  });
+                  //legge i dati dai files di affido selezionati
+                  console.log(diffide)
+                  google.script.run
+                    .withSuccessHandler(onPrintDiffide)
+                    .withFailureHandler(onError3)
+                    .printDiffide(diffide)    
+                  return false
+                  */
+          }
+          
+          
+                function onPrintDiffide(){
+                    
+                }
+                 
+                function onError3(err){
+                  console.log(err)
+                  $('#printOutput').html('Non è stato possibile stampare le diffide selezionate')
+                 }
+                 
+          
+        
+    
+     $('#modal').click(function (){
+        $('#modal').modal('open');
+     });
+     
+     $('#range').blur(function(e){
+        var range = $('#range').val()
+        console.log(range)
+     });
+ 
+
+
+
+
+  
+function createTableFiles(){
+console.log('createTableFiles')
+//legge i files affidi da importare presenti su folder
+  google.script.run
+    .withSuccessHandler(onImported)
+    .withFailureHandler(onFailure)
+    .readFilesAffidiFromFolder()
+
+ }
+ 
+ function onFailure(error) {
+        var div = document.getElementById('output');
+        div.innerHTML = "ERROR: " + error.message;
+ }
+ 
+ function onImported(objFilesAffidi){
+ var files = JSON.parse(objFilesAffidi)
+ console.log("data")
+ console.log(files)
+ console.log("numero files= " + files.length)
+ var myCheckbox = '' 
+ var assegnati = 0
+ var wroteOnTable = 0
+ $('#tableFiles tbody').empty()
+ if (files.length == 0) {
+           
+           $('#tableFiles thead').append('<th><td style="text-align: center" colspan="6">No result found</td></th>');        
+ }
+ else
+ {
+    for (var i=0; i<files.length; i++){
+        if (files[i]['Stato affido'] == 'Assegnato'){
+          assegnati++
+          myCheckbox = '<label><input id="checkbox'+(i+1)+'" class="checkSingle" type="checkbox"></label>'
+          tr = $('<tr>');
+          tr.append("<td>" + myCheckbox + "</td>");
+          tr.append("<td>" + files[i]['Nome del file'] + "</td>");
+          tr.append("<td style='display: none'>" + files[i]['URL'] + "</td>");
+          tr.append("<td>" + files[i]['Stato affido'] + "</td>");
+          tr.append("<td>" + files[i]['Data assegnazione'] + "</td>");
+          tr.append("<td>" + files[i]['Data importazione'] + "</td>");
+          tr.append("<td>" + files[i].Badge + "</td>");
+          $('#tableFiles').append(tr);
+          wroteOnTable++
+        } 
+    }
+ }   
+  console.log('scritti in tabella ' + wroteOnTable) 
+  console.log('files assegnati ' + assegnati)         
+}
+
+
+
+
+// Crea la TableDiffide
+
+function createTableDiffide(){  
+//legge dati affidi e crea tabella diffide
+console.log('createTableDiffide')
+google.script.run
+  .withSuccessHandler(onReadDiffideDaInviare)
+  .withFailureHandler(onFailure)
+  .readDiffideDaInviareFromSheet()
+}
+
+
+// withSuccessHandler di readDiffideDaInviare
+
+  function onReadDiffideDaInviare(objAllDiffideDaInviare){
+    var diffide = JSON.parse(objAllDiffideDaInviare)
+    console.log('DiffideDaInviare ')
+    console.log(diffide)
+    $('#tableDiffide tbody').remove()
+        var tr
+        if (diffide.length > 0){
+          for (i=0; i<diffide.length; i++){
+                var myCheckbox = '<div vcenter> <label> <input id="checkbox'+(i+1)+'" class="checkSingleDiffide" type="checkbox"> </label> </div>'
+                tr = $('<tr>');
+                tr.append("<td >" + myCheckbox + "</td>");
+                tr.append("<td>" + diffide[i]['Riferimento pratica'] + "</td>");
+                tr.append("<td>" + diffide[i]['Codice cliente'] + "</td>");
+                tr.append("<td>" + diffide[i]['Dato fiscale'] + "</td>");
+                tr.append("<td>" + diffide[i]['Ragione sociale'] + "</td>");
+                $('#tableDiffide').append(tr);  
+          }
+        }
+        else
+        {
+           $('#tableDiffide tbody').prepend($('<tr class="no-result text-center"><td colspan="">No result found</td></tr>'));
+        }
+ }
+
+
+
+</script>
+
+

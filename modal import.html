@@ -1,0 +1,69 @@
+ <!-- Modal -->
+  <div id="myModal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Modal Header</h4>
+      </div>
+      <div class="modal-body">
+        
+            <h4>Importa files Affidi</h4>
+            <div class="input-group">
+                <label class="input-group-btn">
+                    <span class="btn btn-primary">
+                        Seleziona&hellip; <input type="file" style="display: none;" multiple>
+                    </span>
+                </label>
+                <input type="text" class="form-control" readonly>
+            </div>
+            <span class="help-block">
+                Seleziona uno o più files di Affidi da importare
+            </span> 
+            <table id="table"></table>
+ 
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  $(function() {
+
+  // We can attach the `fileselect` event to all file inputs on the page
+  $(document).on('change', ':file', function() {
+    var input = $(this),
+        numFiles = input.get(0).files ? input.get(0).files.length : 1,
+        label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
+    input.trigger('fileselect', [numFiles, label]);
+    
+  });
+
+  // We can watch for our custom `fileselect` event like this
+  $(document).ready( function() {
+      $(':file').on('fileselect', function(event, numFiles, label) {
+
+          var input = $(this).parents('.input-group').find(':text'),
+              log = numFiles > 1 ? numFiles + ' files selected' : label;
+
+          if( input.length ) {
+              input.val(log);
+              $("#table").append(numFiles + " - " + label);
+          } else {
+              if( log ) alert(log);
+          }
+
+      });
+  });
+  
+});
+
+
+</script>
+  
